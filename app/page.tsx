@@ -3,11 +3,10 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// 환경 변수 체크 (브라우저 콘솔에서 에러 확인용)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const MODE_NAMES: Record<string, string> = {
   brawlBall: 'Brawl Ball', gemGrab: 'Gem Grab', hotZone: 'Hot Zone',
@@ -36,7 +35,6 @@ export default function BrawlMetaDashboard() {
 
   const normalizeName = (name: string) => name?.trim().replace(/[^a-zA-Z0-9]/g, '').toUpperCase() || '';
 
-  // 1. 초기 데이터 로드 (무한 루프 방지 및 1000개 제한 우회)
   useEffect(() => {
     async function init() {
       try {
@@ -73,7 +71,6 @@ export default function BrawlMetaDashboard() {
     init();
   }, []);
 
-  // 2. 모드 선택 시 맵 로드
   useEffect(() => {
     if (selectedMode) {
       async function fetchMaps() {
@@ -95,7 +92,6 @@ export default function BrawlMetaDashboard() {
     setSelectedMap(''); setStats([]); setSelectedBrawler(null); setMatchups([]);
   }, [selectedMode]);
 
-  // 3. 맵 선택 시 티어 통계 로드
   useEffect(() => {
     if (selectedMode && selectedMap) {
       supabase.from('brawler_stats').select('*').eq('mode', selectedMode).eq('map', selectedMap)
@@ -104,7 +100,6 @@ export default function BrawlMetaDashboard() {
     setSelectedBrawler(null);
   }, [selectedMode, selectedMap]);
 
-  // 4. 브롤러 클릭 시 카운터 데이터 로드
   const fetchMatchups = async (brawlerName: string) => {
     setSelectedBrawler(brawlerName);
     const { data } = await supabase.from('brawler_matchups')
@@ -202,12 +197,11 @@ export default function BrawlMetaDashboard() {
               </div>
             </div>
           ) : (
+            /* 카운터 데이터 분석 영역 */
             <div className="w-full h-full flex flex-col animate-in slide-in-from-right-8 duration-500 z-20 pt-4">
               <div className="flex flex-col items-center border-b border-white/10 pb-6 mb-6">
                 <img src={getBrawlerImg(selectedBrawler) || ''} className="w-16 h-16 object-contain rounded-2xl bg-zinc-900 p-2 border border-white/10 shadow-xl mb-3" alt="" />
                 <h2 className="text-3xl font-black italic uppercase tracking-tighter text-yellow-400 leading-none">{selectedBrawler}</h2>
-                
-                {/* Back to Map 버튼 수정 (태그 불일치 오류 해결) */}
                 <button 
                   onClick={() => setSelectedBrawler(null)} 
                   className="mt-6 bg-yellow-400 text-black px-10 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(250,204,21,0.3)] hover:scale-105 active:scale-95 transition-all"
@@ -216,31 +210,49 @@ export default function BrawlMetaDashboard() {
                 </button>
               </div>
 
+              {/* 헤더: 이미지 컬럼은 헤더 생략 (빈 div) */}
               <div className="grid grid-cols-12 px-2 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-white/5 mb-3">
-                <div className="col-span-1"></div> 
-                <div className="col-span-5 pl-2">Opponent</div>
+                <div className="col-span-1"></div> {/* 왼쪽 끝 공백 */}
+                <div className="col-span-1"></div> {/* 이미지 컬럼 헤더 (생략) */}
+                <div className="col-span-4 pl-3">Opponent</div>
                 <div className="col-span-3 text-center">Win %</div>
                 <div className="col-span-2 text-right pr-2">Matches</div>
-                <div className="col-span-1"></div> 
+                <div className="col-span-1"></div> {/* 오른쪽 끝 공백 */}
               </div>
 
+              {/* 리스트 본문: 이미지 -> 이름 -> 승률 -> 매치 수 */}
               <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar pb-10 overflow-x-hidden">
                 {matchups.map((m) => {
                   const heatStyle = getWinRateColor(m.win_rate);
                   return (
                     <div key={m.opponent_name} className={`grid grid-cols-12 items-center py-2.5 rounded-xl border transition-all duration-200 ${heatStyle}`}>
-                      <div className="col-span-1"></div> 
-                      <div className="col-span-5 flex items-center gap-3">
-                        <img src={getBrawlerImg(m.opponent_name) || ''} className="w-8 h-8 min-w-[32px] max-w-[32px] object-contain rounded-lg bg-black/30" alt="" />
+                      <div className="col-span-1"></div> {/* 왼쪽 끝 공백 */}
+                      
+                      {/* 두 번째 컬럼: 브롤러 이미지 */}
+                      <div className="col-span-1 flex justify-center">
+                        <img 
+                          src={getBrawlerImg(m.opponent_name) || ''} 
+                          className="w-8 h-8 min-w-[32px] max-w-[32px] object-contain rounded-lg bg-black/30 shadow-sm" 
+                          alt="" 
+                        />
+                      </div>
+                      
+                      {/* 세 번째 컬럼: 브롤러 이름 */}
+                      <div className="col-span-4 pl-3 flex items-center">
                         <span className="font-black text-[10px] uppercase truncate text-white tracking-tight">{m.opponent_name}</span>
                       </div>
+                      
+                      {/* 네 번째 컬럼: 승률 */}
                       <div className="col-span-3 text-center">
                         <span className="font-black italic text-[14px]">{m.win_rate}%</span>
                       </div>
+                      
+                      {/* 다섯 번째 컬럼: 매치 수 */}
                       <div className="col-span-2 text-right pr-2">
                         <span className="font-black italic text-[14px]">{m.match_count}</span>
                       </div>
-                      <div className="col-span-1"></div> 
+
+                      <div className="col-span-1"></div> {/* 오른쪽 끝 공백 */}
                     </div>
                   );
                 })}
