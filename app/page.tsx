@@ -110,11 +110,19 @@ export default function BrawlMetaDashboard() {
   };
 
   const getTierStyle = (score: number) => {
-    if (score >= 1.5) return { l: 'S', row: 'bg-[#064e3b] border-emerald-500/50' };
-    if (score >= 1.0) return { l: 'A', row: 'bg-[#15803d] border-green-500/50' };
-    if (score >= 0.5) return { l: 'B', row: 'bg-[#4d7c0f] border-lime-500/50' };
-    if (score >= 0.0) return { l: 'C', row: 'bg-[#a16207] border-yellow-600/50' };
-    if (score >= -0.5) return { l: 'D', row: 'bg-[#c2410c] border-orange-500/50' };
+    // OP Tier: 3 이상
+    if (score >= 3) return { l: 'OP', row: 'bg-[#581c87] border-purple-500/50' };
+    // S Tier: 2.5 이상
+    if (score >= 2.5) return { l: 'S', row: 'bg-[#064e3b] border-emerald-500/50' };
+    // A Tier: 1.5 이상
+    if (score >= 1.5) return { l: 'A', row: 'bg-[#15803d] border-green-500/50' };
+    // B Tier: 0.0 이상
+    if (score >= 0.0) return { l: 'B', row: 'bg-[#4d7c0f] border-lime-500/50' };
+    // C Tier: -1.0 이상
+    if (score >= -1.0) return { l: 'C', row: 'bg-[#a16207] border-yellow-600/50' };
+    // D Tier: -1.5 이상
+    if (score >= -1.5) return { l: 'D', row: 'bg-[#c2410c] border-orange-500/50' };
+    // F Tier: 그 미만
     return { l: 'F', row: 'bg-[#b91c1c] border-red-600/50' };
   };
 
