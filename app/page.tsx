@@ -171,11 +171,11 @@ export default function BrawlMetaDashboard() {
 
   // === 화면 렌더링 ===
   return (
-    // [중요] 'desktop-container' 클래스가 PC에서 가로 배치를 강제합니다.
+    // 'desktop-container': PC에서 가로 배치 강제
     <div className="desktop-container h-screen md:h-[98vh] w-full max-w-[1920px] bg-zinc-950 text-white flex flex-col overflow-hidden font-sans m-auto md:mt-[1vh] border-none md:border border-white/5 rounded-none md:rounded-3xl shadow-2xl">
       
       {/* ================= 왼쪽 섹션 ================= 
-         'desktop-left' 클래스가 PC에서 너비 53%를 강제합니다.
+         'desktop-left': PC에서 너비 53% 강제
       */}
       <section className={`w-full flex-col border-r border-white/5 bg-[#080808] h-full overflow-hidden desktop-left ${selectedBrawler ? 'hidden' : 'flex'}`}>
         
@@ -235,12 +235,16 @@ export default function BrawlMetaDashboard() {
         {/* 리스트 헤더 */}
         <div className="grid grid-cols-12 px-3 md:px-5 py-3 md:py-4 bg-zinc-900/90 text-[10px] font-black text-zinc-500 uppercase tracking-widest sticky top-0 z-10 border-b border-white/5 shrink-0">
           <div className="col-span-1 text-center hidden sm:block">#</div>
+          {/* [수정] 티어 칸 비율 조정 (1칸) */}
           <div className="col-span-2 sm:col-span-1 text-center">{UI_TEXT[lang].tier}</div>
           <div className="col-span-1"></div>
-          <div className="col-span-4 sm:col-span-3 text-center">{UI_TEXT[lang].brawler}</div>
-          <div className="col-span-2 text-center hidden sm:block">{UI_TEXT[lang].match}</div>
-          <div className="col-span-3 sm:col-span-2 text-center">{UI_TEXT[lang].win}</div>
-          <div className="col-span-2 sm:col-span-2 text-center">{UI_TEXT[lang].score}</div>
+          {/* [수정] 브롤러 이름 칸 4->3 줄임 */}
+          <div className="col-span-3 text-center">{UI_TEXT[lang].brawler}</div>
+          {/* [수정] 매치 칸 항상 보임 (2칸) */}
+          <div className="col-span-2 text-center">{UI_TEXT[lang].match}</div>
+          {/* [수정] 승률 칸 3->2 줄임 */}
+          <div className="col-span-2 text-center">{UI_TEXT[lang].win}</div>
+          <div className="col-span-2 text-center">{UI_TEXT[lang].score}</div>
         </div>
 
         {/* 리스트 본문 */}
@@ -263,12 +267,12 @@ export default function BrawlMetaDashboard() {
                   </div>
                 </div>
 
-                <div className="col-span-4 sm:col-span-3 text-center font-black uppercase text-[10px] md:text-[11px] truncate px-1 text-white">
+                <div className="col-span-3 text-center font-black uppercase text-[10px] md:text-[11px] truncate px-1 text-white">
                   {t(transMap, row.brawler_name, lang)}
                 </div>
-                <div className="col-span-2 text-center text-[12px] font-bold text-white/90 hidden sm:block">{row.match_count}</div>
-                <div className="col-span-3 sm:col-span-2 text-center text-[11px] md:text-[12px] font-black text-white">{row.win_rate}%</div>
-                <div className="col-span-2 sm:col-span-2 text-center font-black text-[11px] md:text-[12px] text-white italic">{Number(row.total_score).toFixed(2)}</div>
+                <div className="col-span-2 text-center text-[12px] font-bold text-white/90">{row.match_count}</div>
+                <div className="col-span-2 text-center text-[11px] md:text-[12px] font-black text-white">{row.win_rate}%</div>
+                <div className="col-span-2 text-center font-black text-[11px] md:text-[12px] text-white italic">{Number(row.total_score).toFixed(2)}</div>
               </div>
             );
           })}
@@ -276,7 +280,7 @@ export default function BrawlMetaDashboard() {
       </section>
 
       {/* ================= 오른쪽 섹션: 상세 정보 ================= 
-         'desktop-right' 클래스가 PC에서 너비 47%를 강제합니다.
+         'desktop-right': PC에서 너비 47% 강제
       */}
       <section className={`w-full bg-[#020202] flex-col items-center justify-center p-4 md:p-6 relative overflow-hidden border-l border-white/5 h-full desktop-right ${selectedBrawler ? 'flex' : 'hidden'}`}>
         {!selectedMap ? (
@@ -364,12 +368,7 @@ export default function BrawlMetaDashboard() {
         )}
       </section>
 
-      {/* [최종 해결책] CSS로 PC 레이아웃 강제 지정
-          - @media (min-width: 768px): PC 화면에서는
-          - desktop-container: 무조건 가로(Row) 배치
-          - desktop-left: 무조건 보이고(flex), 너비 53%
-          - desktop-right: 무조건 보이고(flex), 너비 47%
-      */}
+      {/* [중요] PC 화면(768px 이상) 강제 레이아웃 지정 */}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
