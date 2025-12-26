@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-// ▼ [추가 1] 번역 헬퍼 함수 가져오기 (경로가 다르면 수정해주세요)
 import { loadTranslations, t, TranslationMap } from '@/utils/translationHelper';
 
 const supabase = createClient(
@@ -10,17 +9,27 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// (MODE_NAMES는 번역 테이블에 모드명이 있다면 굳이 필요 없지만, 혹시 몰라 둡니다)
 const MODE_NAMES: Record<string, string> = {
   brawlBall: 'Brawl Ball', gemGrab: 'Gem Grab', hotZone: 'Hot Zone',
   knockout: 'Knockout', heist: 'Heist', bounty: 'Bounty'
 };
 
-// ▼ [추가 2] UI 고정 텍스트 번역을 위한 간단한 로컬 사전
 const UI_TEXT = {
-  ko: { tier: '티어', brawler: '브롤러', match: '매치', win: '승률', score: '점수', opponent: '상대', back: '뒤로가기' },
-  en: { tier: 'Tier', brawler: 'Brawler', match: 'Match', win: 'Win%', score: 'Score', opponent: 'Opponent', back: 'Back' },
-  ja: { tier: 'ティア', brawler: 'キャラ', match: '対戦数', win: '勝率', score: 'スコア', opponent: '相手', back: '戻る' },
+  ko: { 
+    tier: '티어', brawler: '브롤러', match: '매치', win: '승률', score: '점수', 
+    opponent: '상대', back: '뒤로가기',
+    score_desc: '승률과 픽률을 기반으로 산출된 점수' 
+  },
+  en: { 
+    tier: 'Tier', brawler: 'Brawler', match: 'Match', win: 'Win%', score: 'Score', 
+    opponent: 'Opponent', back: 'Back',
+    score_desc: 'Score based on Win Rate & Pick Rate'
+  },
+  ja: { 
+    tier: 'ティア', brawler: 'キャラ', match: '対戦数', win: '勝率', score: 'スコア', 
+    opponent: '相手', back: '戻る',
+    score_desc: '勝率と使用率に基づくスコア'
+  },
 };
 
 interface BrawlerStat {
@@ -43,16 +52,14 @@ export default function BrawlMetaDashboard() {
   const [brawlerImages, setBrawlerImages] = useState<Record<string, string>>({});
   const [mapImages, setMapImages] = useState<Record<string, string>>({});
 
-  // ▼ [추가 3] 번역 관련 State 추가
   const [transMap, setTransMap] = useState<TranslationMap>({});
-  const [lang, setLang] = useState<'ko' | 'en' | 'ja'>('ko'); // 기본 언어
+  const [lang, setLang] = useState<'ko' | 'en' | 'ja'>('ko');
 
   const normalizeName = (name: string) => name?.trim().replace(/[^a-zA-Z0-9]/g, '').toUpperCase() || '';
 
   useEffect(() => {
     async function init() {
       try {
-        // ▼ [추가 4] 번역 데이터 가져오기 (병렬 처리 권장하나, 기존 흐름 유지)
         const trData = await loadTranslations();
         setTransMap(trData);
 
@@ -157,10 +164,8 @@ export default function BrawlMetaDashboard() {
           <div className="p-6 space-y-5 border-b border-white/5 bg-zinc-900/30">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-black italic tracking-tighter text-yellow-400 uppercase leading-none">
-               {/* 예: lang이 'ko'면 '브롤 메타', 'en'이면 'Brawl Meta' */}
                 {lang === 'ko' ? '브롤 경쟁전 메타' : lang === 'ja' ? 'ブロスタ ガチバトル メタ' : 'Brawl Ranked Meta'}
               </h1>
-              {/* ▼ [추가 5] 언어 변경 버튼 */}
               <div className="flex gap-1">
                  {(['ko', 'en', 'ja'] as const).map((l) => (
                    <button 
@@ -173,14 +178,14 @@ export default function BrawlMetaDashboard() {
               </div>
             </div>
             
-            <div className="flex gap-3">
+            {/* 필터 영역 */}
+            <div className="flex gap-3 items-end">
               <select 
                 className="w-full max-w-[160px] bg-zinc-900 border border-zinc-700 px-4 py-3.5 rounded-2xl font-black text-[11px] outline-none focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
                 value={selectedMode} 
                 onChange={(e) => setSelectedMode(e.target.value)}
               >
                 <option value="">-- MODE --</option>
-                {/* ▼ [추가 6] 모드 이름 번역 적용 */}
                 {modes.map(m => <option key={m} value={m}>{t(transMap, m, lang)}</option>)}
               </select>
               <select 
@@ -190,15 +195,18 @@ export default function BrawlMetaDashboard() {
                 onChange={(e) => setSelectedMap(e.target.value)}
               >
                 <option value="">-- MAP --</option>
-                {/* ▼ [추가 7] 맵 이름 번역 적용 */}
                 {maps.map(m => <option key={m} value={m}>{t(transMap, m, lang)}</option>)}
               </select>
+
+              {/* ▼ [수정됨] max-w 제한 제거 및 whitespace-nowrap 추가로 줄바꿈 방지 */}
+              <div className="ml-auto pb-1 text-[9px] text-zinc-500 font-medium text-right whitespace-nowrap opacity-70 tracking-tight">
+                * {UI_TEXT[lang].score_desc}
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-12 px-5 py-4 bg-zinc-900/90 text-[10px] font-black text-zinc-500 uppercase tracking-widest sticky top-0 z-10 border-b border-white/5">
             <div className="col-span-1 text-center">#</div>
-            {/* ▼ [추가 8] UI 헤더 번역 */}
             <div className="col-span-1 text-center">{UI_TEXT[lang].tier}</div>
             <div className="col-span-1"></div>
             <div className="col-span-3 text-center">{UI_TEXT[lang].brawler}</div>
@@ -218,7 +226,6 @@ export default function BrawlMetaDashboard() {
                   
                   <div className="col-span-1 flex justify-center">
                     <div style={{ width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' }} className="overflow-hidden rounded-lg bg-zinc-900">
-                      {/* 이미지는 원본 영어 이름(ID)으로 찾습니다 */}
                       <img 
                         src={getBrawlerImg(row.brawler_name) || ''} 
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
@@ -227,7 +234,6 @@ export default function BrawlMetaDashboard() {
                     </div>
                   </div>
 
-                  {/* ▼ [추가 9] 리스트의 브롤러 이름 번역 */}
                   <div className="col-span-3 text-center font-black uppercase text-[11px] truncate px-1 text-white">
                     {t(transMap, row.brawler_name, lang)}
                   </div>
@@ -247,7 +253,6 @@ export default function BrawlMetaDashboard() {
           ) : !selectedBrawler ? (
             <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in duration-700 overflow-hidden">
               <div className="absolute top-10 w-full text-center z-10 px-4">
-                {/* ▼ [추가 10] 선택된 맵 이름 번역 */}
                 <h3 className="text-3xl font-black italic text-yellow-400 uppercase tracking-[0.4em] drop-shadow-2xl">
                   {t(transMap, selectedMap, lang)}
                 </h3>
@@ -257,7 +262,6 @@ export default function BrawlMetaDashboard() {
               </div>
             </div>
           ) : (
-            /* 카운터 데이터 분석 영역 */
             <div className="w-full h-full flex flex-col animate-in slide-in-from-right-8 duration-500 z-20 pt-4">
               <div className="flex flex-col items-center border-b border-white/10 pb-6 mb-6">
                 
@@ -272,7 +276,6 @@ export default function BrawlMetaDashboard() {
                   />
                 </div>
 
-                {/* ▼ [추가 11] 선택된 브롤러 이름 번역 */}
                 <h2 className="text-3xl font-black italic uppercase tracking-tighter text-yellow-400 leading-none">
                   {t(transMap, selectedBrawler, lang)}
                 </h2>
@@ -280,23 +283,19 @@ export default function BrawlMetaDashboard() {
                   onClick={() => setSelectedBrawler(null)} 
                   className="mt-6 bg-yellow-400 text-black px-10 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(250,204,21,0.3)] hover:scale-105 active:scale-95 transition-all"
                 >
-                  {/* ▼ [추가 12] 뒤로가기 버튼 번역 */}
                   ← {UI_TEXT[lang].back}
                 </button>
               </div>
 
-              {/* 헤더 */}
               <div className="grid grid-cols-12 px-2 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-white/5 mb-3">
                 <div className="col-span-1"></div>
                 <div className="col-span-1"></div>
-                {/* ▼ [추가 13] 상대편 헤더 번역 */}
                 <div className="col-span-4 pl-3">{UI_TEXT[lang].opponent}</div>
                 <div className="col-span-3 text-center">{UI_TEXT[lang].win}</div>
                 <div className="col-span-2 text-right pr-2">{UI_TEXT[lang].match}</div>
                 <div className="col-span-1"></div>
               </div>
 
-              {/* 리스트 본문 */}
               <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar pb-10 overflow-x-hidden">
                 {matchups.map((m) => {
                   const heatStyle = getWinRateColor(m.win_rate);
@@ -318,7 +317,6 @@ export default function BrawlMetaDashboard() {
                       </div>
                       
                       <div className="col-span-4 pl-3 flex items-center">
-                        {/* ▼ [추가 14] 상대방 브롤러 이름 번역 */}
                         <span className="font-black text-[10px] uppercase truncate text-white tracking-tight">
                           {t(transMap, m.opponent_name, lang)}
                         </span>
