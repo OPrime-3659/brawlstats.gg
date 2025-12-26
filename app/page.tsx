@@ -165,16 +165,14 @@ export default function BrawlMetaDashboard() {
   const getMapImg = (name: string) => mapImages[normalizeName(name)] || null;
 
   return (
-    // [레이아웃] flex flex-col md:flex-row 로 복귀
     <div className="h-screen md:h-[98vh] w-full max-w-[1920px] bg-zinc-950 text-white flex flex-col md:flex-row overflow-hidden font-sans m-auto md:mt-[1vh] border-none md:border border-white/5 rounded-none md:rounded-3xl shadow-2xl">
       <main className="flex-1 flex overflow-hidden relative w-full">
         
         {/* ================= 왼쪽 섹션 ================= */}
-        {/* 'force-desktop-flex' 클래스 추가: CSS로 강제 표시 */}
+        {/* force-desktop-flex: PC에서 무조건 보임 */}
         <section className={`w-full md:w-[53%] flex-col border-r border-white/5 bg-[#080808] force-desktop-flex ${selectedBrawler ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-4 md:p-6 space-y-4 md:space-y-5 border-b border-white/5 bg-zinc-900/30 shrink-0">
             
-            {/* 헤더 영역 */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2 md:gap-3">
                 <img 
@@ -200,10 +198,9 @@ export default function BrawlMetaDashboard() {
               </div>
             </div>
             
-            {/* 필터 영역 */}
             <div className="flex gap-2 md:gap-3 items-end">
               <select 
-                className="flex-1 md:flex-none w-auto md:w-[160px] bg-zinc-900 border border-zinc-700 px-2 md:px-4 py-3 md:py-3.5 rounded-xl md:rounded-2xl font-black text-[10px] md:text-[11px] outline-none focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
+                className="w-full max-w-[160px] bg-zinc-900 border border-zinc-700 px-4 py-3.5 rounded-2xl font-black text-[11px] outline-none focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
                 value={selectedMode} 
                 onChange={(e) => setSelectedMode(e.target.value)}
               >
@@ -211,7 +208,7 @@ export default function BrawlMetaDashboard() {
                 {modes.map(m => <option key={m} value={m}>{t(transMap, m, lang)}</option>)}
               </select>
               <select 
-                className="flex-1 md:flex-none w-auto md:w-[180px] bg-zinc-900 border border-zinc-700 px-2 md:px-4 py-3 md:py-3.5 rounded-xl md:rounded-2xl font-black text-[10px] md:text-[11px] outline-none disabled:opacity-20 focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
+                className="w-full max-w-[180px] bg-zinc-900 border border-zinc-700 px-4 py-3.5 rounded-2xl font-black text-[11px] outline-none disabled:opacity-20 focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
                 disabled={!selectedMode} 
                 value={selectedMap} 
                 onChange={(e) => setSelectedMap(e.target.value)}
@@ -220,7 +217,8 @@ export default function BrawlMetaDashboard() {
                 {maps.map(m => <option key={m} value={m}>{t(transMap, m, lang)}</option>)}
               </select>
 
-              <div className="hidden sm:block ml-auto pb-1 text-[9px] text-zinc-500 font-medium text-right whitespace-nowrap opacity-70 tracking-tight">
+              {/* ▼ [수정됨] hidden 클래스 제거 -> 무조건 보임 */}
+              <div className="ml-auto pb-1 text-[9px] text-zinc-500 font-medium text-right whitespace-nowrap opacity-80 tracking-tight">
                 * {UI_TEXT[lang].score_desc}
               </div>
             </div>
@@ -268,7 +266,7 @@ export default function BrawlMetaDashboard() {
         </section>
 
         {/* ================= 오른쪽 섹션 ================= */}
-        {/* 'force-desktop-flex' 클래스 추가: CSS로 강제 표시 */}
+        {/* force-desktop-flex: PC에서 무조건 보임 */}
         <section className={`w-full md:w-[47%] bg-[#020202] flex-col items-center justify-center p-4 md:p-6 relative overflow-hidden border-l border-white/5 h-full force-desktop-flex ${selectedBrawler ? 'flex' : 'hidden md:flex'}`}>
           {!selectedMap ? (
             <div className="h-full flex items-center justify-center text-zinc-900 font-black text-[50px] md:text-[100px] opacity-5 transform -rotate-12 uppercase tracking-tighter select-none">Brawl Meta</div>
@@ -364,7 +362,6 @@ export default function BrawlMetaDashboard() {
         </section>
       </main>
 
-      {/* [중요] CSS 강제 오버라이드: 화면이 768px 이상이면 무조건 두 섹션을 flex로 보이게 함 */}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
