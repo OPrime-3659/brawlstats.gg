@@ -157,7 +157,8 @@ export default function BrawlMetaDashboard() {
           <div className="p-6 space-y-5 border-b border-white/5 bg-zinc-900/30">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-black italic tracking-tighter text-yellow-400 uppercase leading-none">
-                Brawl Meta <span className="text-white">Analysis</span>
+               {/* 예: lang이 'ko'면 '브롤 메타', 'en'이면 'Brawl Meta' */}
+                {lang === 'ko' ? '브롤 경쟁전 메타' : lang === 'ja' ? 'ブロスタ ガチバトル メタ' : 'Brawl Ranked Meta'}
               </h1>
               {/* ▼ [추가 5] 언어 변경 버튼 */}
               <div className="flex gap-1">
