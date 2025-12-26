@@ -1,19 +1,25 @@
 'use client';
 
+// 1. 필요한 라이브러리 및 헬퍼 함수 가져오기
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { loadTranslations, t, TranslationMap } from '@/utils/translationHelper';
+import { loadTranslations, t, TranslationMap } from '@/utils/translationHelper'; // 번역 기능 (DB에서 텍스트 가져오기)
 
+// 2. Supabase 클라이언트 초기화 (DB 연결)
+// 환경 변수(.env.local)에 있는 URL과 Key를 사용합니다.
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// 3. 상수 데이터 정의
+// 게임 모드 이름 매핑 (코드명 -> 표시명)
 const MODE_NAMES: Record<string, string> = {
   brawlBall: 'Brawl Ball', gemGrab: 'Gem Grab', hotZone: 'Hot Zone',
   knockout: 'Knockout', heist: 'Heist', bounty: 'Bounty'
 };
 
+// 모드 아이콘 경로 매핑 (public/icons 폴더 내 이미지)
 const MODE_ICONS: Record<string, string> = {
   brawlBall: '/icons/mode-brawlball.png',
   gemGrab: '/icons/mode-gemgrab.png',
@@ -23,6 +29,7 @@ const MODE_ICONS: Record<string, string> = {
   bounty: '/icons/mode-bounty.png',
 };
 
+// UI 고정 텍스트 (다국어 지원: 한국어, 영어, 일본어)
 const UI_TEXT = {
   ko: { 
     tier: '티어', brawler: '브롤러', match: '매치', win: '승률', score: '점수', 
@@ -41,37 +48,56 @@ const UI_TEXT = {
   },
 };
 
+// 4. 타입스크립트 인터페이스 정의 (데이터 구조)
+// 메인 통계 데이터 구조
 interface BrawlerStat {
   brawler_name: string; match_count: number; win_count: number;
   win_rate: number; pick_rate: number; total_score: number;
 }
 
+// 상세 보기의 상대 전적(매치업) 데이터 구조
 interface MatchupStat {
   opponent_name: string; match_count: number; win_rate: number;
 }
 
 export default function BrawlMetaDashboard() {
-  const [modes, setModes] = useState<string[]>([]);
-  const [maps, setMaps] = useState<string[]>([]);
-  const [selectedMode, setSelectedMode] = useState('');
-  const [selectedMap, setSelectedMap] = useState('');
-  const [stats, setStats] = useState<BrawlerStat[]>([]);
-  const [selectedBrawler, setSelectedBrawler] = useState<string | null>(null);
-  const [matchups, setMatchups] = useState<MatchupStat[]>([]);
+  // === State 관리 (화면의 상태값들) ===
+  
+  // 필터 데이터
+  const [modes, setModes] = useState<string[]>([]); // 사용 가능한 모드 목록
+  const [maps, setMaps] = useState<string[]>([]); // 선택된 모드의 맵 목록
+  
+  // 사용자 선택 값
+  const [selectedMode, setSelectedMode] = useState(''); // 현재 선택된 모드
+  const [selectedMap, setSelectedMap] = useState(''); // 현재 선택된 맵
+  
+  // 표시할 데이터
+  const [stats, setStats] = useState<BrawlerStat[]>([]); // 왼쪽 리스트에 뿌려줄 통계 데이터
+  const [selectedBrawler, setSelectedBrawler] = useState<string | null>(null); // 오른쪽 상세 화면에 보여줄 브롤러 (null이면 선택 안됨)
+  const [matchups, setMatchups] = useState<MatchupStat[]>([]); // 오른쪽 상세 화면의 상성 데이터
+  
+  // 이미지 캐싱 (URL 저장소)
   const [brawlerImages, setBrawlerImages] = useState<Record<string, string>>({});
   const [mapImages, setMapImages] = useState<Record<string, string>>({});
 
-  const [transMap, setTransMap] = useState<TranslationMap>({});
-  const [lang, setLang] = useState<'ko' | 'en' | 'ja'>('ko');
+  // 번역 관련
+  const [transMap, setTransMap] = useState<TranslationMap>({}); // DB에서 가져온 번역 사전
+  const [lang, setLang] = useState<'ko' | 'en' | 'ja'>('ko'); // 현재 언어 설정
 
+  // 이름 정규화 함수 (이미지 매칭용: 특수문자 제거, 대문자 변환)
   const normalizeName = (name: string) => name?.trim().replace(/[^a-zA-Z0-9]/g, '').toUpperCase() || '';
 
+  // === 초기화 로직 (useEffect) ===
+
+  // 1. 페이지 로드 시 한 번만 실행 (번역 데이터, 모드 목록, 이미지 URL 로딩)
   useEffect(() => {
     async function init() {
       try {
+        // 번역 데이터 로딩
         const trData = await loadTranslations();
         setTransMap(trData);
 
+        // 모드 목록 가져오기 (1000개 단위 페이지네이션 처리)
         let allModes: any[] = [];
         let from = 0;
         let hasMore = true;
@@ -84,14 +110,17 @@ export default function BrawlMetaDashboard() {
             from += 1000;
           } else { hasMore = false; }
         }
+        // 중복 제거 후 정렬하여 상태 저장
         setModes(Array.from(new Set(allModes.map((d: any) => d.mode))).sort());
 
+        // 브롤러 이미지 URL 미리 가져오기
         const { data: bImg } = await supabase.from('image_brawlers').select('name, image_url').limit(1000);
         if (bImg) {
           const bMap: any = {};
           bImg.forEach(i => bMap[normalizeName(i.name)] = i.image_url);
           setBrawlerImages(bMap);
         }
+        // 맵 이미지 URL 미리 가져오기
         const { data: mImg } = await supabase.from('image_maps').select('name, image_url').limit(1000);
         if (mImg) {
           const mMap: any = {};
@@ -105,6 +134,7 @@ export default function BrawlMetaDashboard() {
     init();
   }, []);
 
+  // 2. 모드가 변경되면 -> 해당 모드의 맵 목록을 가져옴
   useEffect(() => {
     if (selectedMode) {
       async function fetchMaps() {
@@ -123,17 +153,22 @@ export default function BrawlMetaDashboard() {
       }
       fetchMaps();
     }
+    // 모드가 바뀌면 맵 선택, 통계, 상세 선택 초기화
     setSelectedMap(''); setStats([]); setSelectedBrawler(null); setMatchups([]);
   }, [selectedMode]);
 
+  // 3. 모드와 맵이 모두 선택되면 -> 왼쪽 리스트(통계) 데이터를 가져옴
   useEffect(() => {
     if (selectedMode && selectedMap) {
       supabase.from('brawler_stats').select('*').eq('mode', selectedMode).eq('map', selectedMap)
         .order('total_score', { ascending: false }).then(({ data }) => setStats(data as BrawlerStat[] || []));
     }
-    setSelectedBrawler(null);
+    setSelectedBrawler(null); // 맵이 바뀌면 상세 보기는 닫음
   }, [selectedMode, selectedMap]);
 
+  // === 이벤트 핸들러 ===
+
+  // 리스트에서 브롤러 클릭 시 -> 오른쪽 상세 데이터(상성) 가져오기
   const fetchMatchups = async (brawlerName: string) => {
     setSelectedBrawler(brawlerName);
     const { data } = await supabase.from('brawler_matchups')
@@ -143,6 +178,9 @@ export default function BrawlMetaDashboard() {
     setMatchups(data as MatchupStat[] || []);
   };
 
+  // === 스타일 헬퍼 함수 ===
+
+  // 점수에 따른 티어 색상 및 라벨 반환 (OP, S, A, B...)
   const getTierStyle = (score: number) => {
     if (score >= 3) return { l: 'OP', row: 'bg-[#581c87] border-purple-500/50' };
     if (score >= 2.5) return { l: 'S', row: 'bg-[#064e3b] border-emerald-500/50' };
@@ -153,6 +191,7 @@ export default function BrawlMetaDashboard() {
     return { l: 'F', row: 'bg-[#b91c1c] border-red-600/50' };
   };
 
+  // 승률에 따른 텍스트 색상 반환 (높을수록 초록색, 낮으면 빨간색)
   const getWinRateColor = (rate: number) => {
     if (rate >= 60) return 'bg-[#064e3b]/80 border-emerald-500/40 text-emerald-300';
     if (rate >= 52) return 'bg-[#14532d]/60 border-green-600/30 text-green-300';
@@ -161,207 +200,227 @@ export default function BrawlMetaDashboard() {
     return 'bg-[#450a0a]/80 border-red-900/40 text-red-300';
   };
 
+  // 이미지 URL 가져오기 헬퍼
   const getBrawlerImg = (name: string) => brawlerImages[normalizeName(name)] || null;
   const getMapImg = (name: string) => mapImages[normalizeName(name)] || null;
 
+  // === 화면 렌더링 (JSX) ===
   return (
-    <div className="h-screen md:h-[98vh] w-full max-w-[1920px] bg-zinc-950 text-white flex flex-col md:flex-row overflow-hidden font-sans m-auto md:mt-[1vh] border-none md:border border-white/5 rounded-none md:rounded-3xl shadow-2xl">
-      <main className="flex-1 flex overflow-hidden relative w-full">
+    // 전체 컨테이너: Grid 레이아웃 사용 (PC에서 좌우 분할 강제)
+    // h-screen: 화면 높이 꽉 채움, md:grid-cols-[53%_47%]: PC에선 53:47 비율 고정
+    <div className="h-screen md:h-[98vh] w-full max-w-[1920px] bg-zinc-950 text-white grid grid-cols-1 md:grid-cols-[53%_47%] overflow-hidden font-sans m-auto md:mt-[1vh] border-none md:border border-white/5 rounded-none md:rounded-3xl shadow-2xl">
+      
+      {/* ================= 왼쪽 섹션: 티어 리스트 ================= 
+        - 모바일: 브롤러 선택 시 숨김 (hidden)
+        - PC: 항상 보임 (force-desktop-flex 클래스로 CSS 강제 적용)
+      */}
+      <section className={`w-full flex-col border-r border-white/5 bg-[#080808] h-full overflow-hidden force-desktop-flex ${selectedBrawler ? 'hidden md:flex' : 'flex'}`}>
         
-        {/* ================= 왼쪽 섹션 ================= */}
-        {/* force-desktop-flex: PC에서 무조건 보임 */}
-        <section className={`w-full md:w-[53%] flex-col border-r border-white/5 bg-[#080808] force-desktop-flex ${selectedBrawler ? 'hidden md:flex' : 'flex'}`}>
-          <div className="p-4 md:p-6 space-y-4 md:space-y-5 border-b border-white/5 bg-zinc-900/30 shrink-0">
-            
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2 md:gap-3">
+        {/* 상단 컨트롤 패널 (로고, 제목, 언어, 필터) */}
+        <div className="p-4 md:p-6 space-y-4 md:space-y-5 border-b border-white/5 bg-zinc-900/30 shrink-0">
+          
+          <div className="flex justify-between items-center">
+            {/* 로고 및 제목 */}
+            <div className="flex items-center gap-2 md:gap-3">
+              <img 
+                src="/icons/logo.png" 
+                alt="Logo" 
+                className="w-[60px] h-[60px] min-w-[60px] min-h-[60px] object-contain drop-shadow-md hover:scale-110 transition-transform duration-300"
+                onError={(e) => (e.currentTarget.style.display = 'none')}
+              />
+              <h1 className="text-xl md:text-2xl font-black italic tracking-tighter text-yellow-400 uppercase leading-none">
+                {lang === 'ko' ? '브롤 경쟁전 메타' : lang === 'ja' ? 'ブロスタ ガチバトル メタ' : 'Brawl Ranked Meta'}
+              </h1>
+            </div>
+
+            {/* 언어 변경 버튼들 */}
+            <div className="flex gap-1">
+               {(['ko', 'en', 'ja'] as const).map((l) => (
+                 <button 
+                   key={l} onClick={() => setLang(l)}
+                   className={`px-2 py-1 text-[10px] font-bold uppercase rounded ${lang === l ? 'bg-yellow-400 text-black' : 'bg-zinc-800 text-zinc-400'}`}
+                 >
+                   {l === 'ko' ? 'KR' : l === 'en' ? 'EN' : 'JP'}
+                 </button>
+               ))}
+            </div>
+          </div>
+          
+          {/* 모드/맵 선택 드롭다운 */}
+          <div className="flex gap-2 md:gap-3 items-end">
+            <select 
+              className="w-full max-w-[160px] bg-zinc-900 border border-zinc-700 px-4 py-3.5 rounded-2xl font-black text-[11px] outline-none focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
+              value={selectedMode} 
+              onChange={(e) => setSelectedMode(e.target.value)}
+            >
+              <option value="">-- MODE --</option>
+              {modes.map(m => <option key={m} value={m}>{t(transMap, m, lang)}</option>)}
+            </select>
+            <select 
+              className="w-full max-w-[180px] bg-zinc-900 border border-zinc-700 px-4 py-3.5 rounded-2xl font-black text-[11px] outline-none disabled:opacity-20 focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
+              disabled={!selectedMode} 
+              value={selectedMap} 
+              onChange={(e) => setSelectedMap(e.target.value)}
+            >
+              <option value="">-- MAP --</option>
+              {maps.map(m => <option key={m} value={m}>{t(transMap, m, lang)}</option>)}
+            </select>
+
+            {/* 점수 설명 텍스트 (우측 정렬) */}
+            <div className="ml-auto pb-1 text-[9px] text-zinc-500 font-medium text-right whitespace-nowrap opacity-80 tracking-tight">
+              * {UI_TEXT[lang].score_desc}
+            </div>
+          </div>
+        </div>
+
+        {/* 테이블 헤더 (순위, 티어, 브롤러, 매치, 승률, 점수) */}
+        <div className="grid grid-cols-12 px-3 md:px-5 py-3 md:py-4 bg-zinc-900/90 text-[10px] font-black text-zinc-500 uppercase tracking-widest sticky top-0 z-10 border-b border-white/5 shrink-0">
+          <div className="col-span-1 text-center hidden sm:block">#</div> {/* 모바일에선 순위 숨김 */}
+          <div className="col-span-2 sm:col-span-1 text-center">{UI_TEXT[lang].tier}</div>
+          <div className="col-span-1"></div>
+          <div className="col-span-4 sm:col-span-3 text-center">{UI_TEXT[lang].brawler}</div>
+          <div className="col-span-2 text-center hidden sm:block">{UI_TEXT[lang].match}</div> {/* 모바일에선 매치수 숨김 */}
+          <div className="col-span-3 sm:col-span-2 text-center">{UI_TEXT[lang].win}</div>
+          <div className="col-span-2 sm:col-span-2 text-center">{UI_TEXT[lang].score}</div>
+        </div>
+
+        {/* 테이블 본문 (스크롤 영역) */}
+        <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 md:space-y-2.5 custom-scrollbar overflow-x-hidden min-h-0">
+          {stats.map((row, idx) => {
+            const style = getTierStyle(row.total_score);
+            const isActive = selectedBrawler === row.brawler_name;
+            return (
+              // 리스트 아이템 (클릭 시 상세 정보 로드)
+              <div key={row.brawler_name} onClick={() => fetchMatchups(row.brawler_name)} className={`grid grid-cols-12 items-center px-2 md:px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${style.row} ${isActive ? 'ring-2 ring-yellow-400 scale-[1.01] brightness-125 shadow-lg' : 'active:scale-95 md:active:scale-100 md:hover:brightness-110'}`}>
+                {/* 각 컬럼 데이터 배치 */}
+                <div className="col-span-1 text-center font-black italic text-white/50 text-[10px] hidden sm:block">#{idx + 1}</div>
+                <div className="col-span-2 sm:col-span-1 text-center font-black text-[16px] md:text-[18px] text-white">{style.l}</div>
+                
+                <div className="col-span-1 flex justify-center">
+                  <div className="w-[32px] h-[32px] md:w-[40px] md:h-[40px] overflow-hidden rounded-lg bg-zinc-900">
+                    <img 
+                      src={getBrawlerImg(row.brawler_name) || ''} 
+                      className="w-full h-full object-cover"
+                      alt="" 
+                    />
+                  </div>
+                </div>
+
+                <div className="col-span-4 sm:col-span-3 text-center font-black uppercase text-[10px] md:text-[11px] truncate px-1 text-white">
+                  {t(transMap, row.brawler_name, lang)}
+                </div>
+                <div className="col-span-2 text-center text-[12px] font-bold text-white/90 hidden sm:block">{row.match_count}</div>
+                <div className="col-span-3 sm:col-span-2 text-center text-[11px] md:text-[12px] font-black text-white">{row.win_rate}%</div>
+                <div className="col-span-2 sm:col-span-2 text-center font-black text-[11px] md:text-[12px] text-white italic">{Number(row.total_score).toFixed(2)}</div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ================= 오른쪽 섹션: 상세 정보 ================= 
+        - 모바일: 브롤러 선택 시에만 보임 (flex), 아니면 숨김 (hidden)
+        - PC: 항상 보임 (force-desktop-flex)
+      */}
+      <section className={`w-full bg-[#020202] flex-col items-center justify-center p-4 md:p-6 relative overflow-hidden border-l border-white/5 h-full force-desktop-flex ${selectedBrawler ? 'flex' : 'hidden md:flex'}`}>
+        {/* CASE 1: 맵 선택 전 (대기 화면) */}
+        {!selectedMap ? (
+          <div className="h-full flex items-center justify-center text-zinc-900 font-black text-[50px] md:text-[100px] opacity-5 transform -rotate-12 uppercase tracking-tighter select-none">Brawl Meta</div>
+        ) : !selectedBrawler ? (
+          // CASE 2: 맵은 선택했으나 브롤러 미선택 (맵 이미지 뷰)
+          <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in duration-700 overflow-hidden">
+            <div className="w-full flex items-center justify-center gap-2 md:gap-3 px-4 mb-4">
+              {/* 모드 아이콘 */}
+              {selectedMode && MODE_ICONS[selectedMode] && (
                 <img 
-                  src="/icons/logo.png" 
-                  alt="Logo" 
-                  className="w-[24px] h-[24px] min-w-[24px] min-h-[24px] object-contain drop-shadow-md hover:scale-110 transition-transform duration-300"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                  src={MODE_ICONS[selectedMode]} 
+                  alt={selectedMode} 
+                  className="w-[30px] h-[30px] min-w-[30px] min-h-[30px] object-contain drop-shadow-lg"
                 />
-                <h1 className="text-xl md:text-2xl font-black italic tracking-tighter text-yellow-400 uppercase leading-none">
-                  {lang === 'ko' ? '브롤 경쟁전 메타' : lang === 'ja' ? 'ブロスタ ガチバトル メタ' : 'Brawl Ranked Meta'}
-                </h1>
-              </div>
-
-              <div className="flex gap-1">
-                 {(['ko', 'en', 'ja'] as const).map((l) => (
-                   <button 
-                     key={l} onClick={() => setLang(l)}
-                     className={`px-2 py-1 text-[10px] font-bold uppercase rounded ${lang === l ? 'bg-yellow-400 text-black' : 'bg-zinc-800 text-zinc-400'}`}
-                   >
-                     {l === 'ko' ? 'KR' : l === 'en' ? 'EN' : 'JP'}
-                   </button>
-                 ))}
-              </div>
+              )}
+              {/* 맵 이름 */}
+              <h3 className="text-xl md:text-3xl font-black italic text-yellow-400 uppercase tracking-[0.2em] md:tracking-[0.4em] drop-shadow-2xl text-center">
+                {t(transMap, selectedMap, lang)}
+              </h3>
             </div>
-            
-            <div className="flex gap-2 md:gap-3 items-end">
-              <select 
-                className="w-full max-w-[160px] bg-zinc-900 border border-zinc-700 px-4 py-3.5 rounded-2xl font-black text-[11px] outline-none focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
-                value={selectedMode} 
-                onChange={(e) => setSelectedMode(e.target.value)}
+            {/* 맵 이미지 */}
+            <div className="relative w-[90%] md:w-[85%] h-[60%] md:h-[75%] flex items-center justify-center">
+              {getMapImg(selectedMap) && <img src={getMapImg(selectedMap)!} alt={selectedMap} className="w-full h-full object-contain" />}
+            </div>
+          </div>
+        ) : (
+          // CASE 3: 브롤러 선택됨 (상세 전적 뷰)
+          <div className="w-full h-full flex flex-col animate-in slide-in-from-right-8 duration-500 z-20 pt-2 md:pt-4">
+            {/* 상단 브롤러 정보 및 뒤로가기 */}
+            <div className="flex flex-col items-center border-b border-white/10 pb-4 md:pb-6 mb-4 md:mb-6 shrink-0">
+              <div className="w-[100px] h-[100px] md:w-[120px] md:h-[120px] overflow-hidden rounded-2xl bg-zinc-900 border border-white/10 shadow-xl mb-3 flex items-center justify-center">
+                <img 
+                  src={getBrawlerImg(selectedBrawler) || ''} 
+                  className="w-full h-full object-cover" 
+                  alt={selectedBrawler || ''} 
+                />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-yellow-400 leading-none mb-4 text-center">
+                {t(transMap, selectedBrawler, lang)}
+              </h2>
+              <button 
+                onClick={() => setSelectedBrawler(null)} 
+                className="bg-yellow-400 text-black px-8 py-3 md:px-10 md:py-4 rounded-2xl text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(250,204,21,0.3)] hover:scale-105 active:scale-95 transition-all"
               >
-                <option value="">-- MODE --</option>
-                {modes.map(m => <option key={m} value={m}>{t(transMap, m, lang)}</option>)}
-              </select>
-              <select 
-                className="w-full max-w-[180px] bg-zinc-900 border border-zinc-700 px-4 py-3.5 rounded-2xl font-black text-[11px] outline-none disabled:opacity-20 focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
-                disabled={!selectedMode} 
-                value={selectedMap} 
-                onChange={(e) => setSelectedMap(e.target.value)}
-              >
-                <option value="">-- MAP --</option>
-                {maps.map(m => <option key={m} value={m}>{t(transMap, m, lang)}</option>)}
-              </select>
-
-              {/* ▼ [수정됨] hidden 클래스 제거 -> 무조건 보임 */}
-              <div className="ml-auto pb-1 text-[9px] text-zinc-500 font-medium text-right whitespace-nowrap opacity-80 tracking-tight">
-                * {UI_TEXT[lang].score_desc}
-              </div>
+                ← {UI_TEXT[lang].back}
+              </button>
             </div>
-          </div>
 
-          <div className="grid grid-cols-12 px-3 md:px-5 py-3 md:py-4 bg-zinc-900/90 text-[10px] font-black text-zinc-500 uppercase tracking-widest sticky top-0 z-10 border-b border-white/5 shrink-0">
-            <div className="col-span-1 text-center hidden sm:block">#</div>
-            <div className="col-span-2 sm:col-span-1 text-center">{UI_TEXT[lang].tier}</div>
-            <div className="col-span-1"></div>
-            <div className="col-span-4 sm:col-span-3 text-center">{UI_TEXT[lang].brawler}</div>
-            <div className="col-span-2 text-center hidden sm:block">{UI_TEXT[lang].match}</div>
-            <div className="col-span-3 sm:col-span-2 text-center">{UI_TEXT[lang].win}</div>
-            <div className="col-span-2 sm:col-span-2 text-center">{UI_TEXT[lang].score}</div>
-          </div>
+            {/* 상대 전적 리스트 헤더 */}
+            <div className="grid grid-cols-12 px-2 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-white/5 mb-3 shrink-0 w-full">
+              <div className="col-span-1"></div>
+              <div className="col-span-1"></div>
+              <div className="col-span-4 pl-3">{UI_TEXT[lang].opponent}</div>
+              <div className="col-span-3 text-center">{UI_TEXT[lang].win}</div>
+              <div className="col-span-2 text-right pr-2">{UI_TEXT[lang].match}</div>
+              <div className="col-span-1"></div>
+            </div>
 
-          <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 md:space-y-2.5 custom-scrollbar overflow-x-hidden min-h-0">
-            {stats.map((row, idx) => {
-              const style = getTierStyle(row.total_score);
-              const isActive = selectedBrawler === row.brawler_name;
-              return (
-                <div key={row.brawler_name} onClick={() => fetchMatchups(row.brawler_name)} className={`grid grid-cols-12 items-center px-2 md:px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${style.row} ${isActive ? 'ring-2 ring-yellow-400 scale-[1.01] brightness-125 shadow-lg' : 'active:scale-95 md:active:scale-100 md:hover:brightness-110'}`}>
-                  <div className="col-span-1 text-center font-black italic text-white/50 text-[10px] hidden sm:block">#{idx + 1}</div>
-                  <div className="col-span-2 sm:col-span-1 text-center font-black text-[16px] md:text-[18px] text-white">{style.l}</div>
-                  
-                  <div className="col-span-1 flex justify-center">
-                    <div className="w-[32px] h-[32px] md:w-[40px] md:h-[40px] overflow-hidden rounded-lg bg-zinc-900">
-                      <img 
-                        src={getBrawlerImg(row.brawler_name) || ''} 
-                        className="w-full h-full object-cover"
-                        alt="" 
-                      />
+            {/* 상대 전적 리스트 바디 */}
+            <div className="flex-1 w-full overflow-y-auto space-y-1.5 pr-1 custom-scrollbar pb-10 overflow-x-hidden min-h-0">
+              {matchups.map((m) => {
+                const heatStyle = getWinRateColor(m.win_rate);
+                return (
+                  <div key={m.opponent_name} className={`grid grid-cols-12 items-center py-2 md:py-2.5 rounded-xl border transition-all duration-200 ${heatStyle}`}>
+                    <div className="col-span-1"></div>
+                    <div className="col-span-1 flex justify-center">
+                      <div className="w-[30px] h-[30px] md:w-[40px] md:h-[40px] overflow-hidden rounded-lg bg-black/30 shadow-sm">
+                          <img 
+                          src={getBrawlerImg(m.opponent_name) || ''} 
+                          className="w-full h-full object-cover"
+                          alt="" 
+                        />
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="col-span-4 sm:col-span-3 text-center font-black uppercase text-[10px] md:text-[11px] truncate px-1 text-white">
-                    {t(transMap, row.brawler_name, lang)}
-                  </div>
-                  <div className="col-span-2 text-center text-[12px] font-bold text-white/90 hidden sm:block">{row.match_count}</div>
-                  <div className="col-span-3 sm:col-span-2 text-center text-[11px] md:text-[12px] font-black text-white">{row.win_rate}%</div>
-                  <div className="col-span-2 sm:col-span-2 text-center font-black text-[11px] md:text-[12px] text-white italic">{Number(row.total_score).toFixed(2)}</div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ================= 오른쪽 섹션 ================= */}
-        {/* force-desktop-flex: PC에서 무조건 보임 */}
-        <section className={`w-full md:w-[47%] bg-[#020202] flex-col items-center justify-center p-4 md:p-6 relative overflow-hidden border-l border-white/5 h-full force-desktop-flex ${selectedBrawler ? 'flex' : 'hidden md:flex'}`}>
-          {!selectedMap ? (
-            <div className="h-full flex items-center justify-center text-zinc-900 font-black text-[50px] md:text-[100px] opacity-5 transform -rotate-12 uppercase tracking-tighter select-none">Brawl Meta</div>
-          ) : !selectedBrawler ? (
-            <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in duration-700 overflow-hidden">
-              
-              <div className="w-full flex items-center justify-center gap-2 md:gap-3 px-4 mb-4">
-                {selectedMode && MODE_ICONS[selectedMode] && (
-                  <img 
-                    src={MODE_ICONS[selectedMode]} 
-                    alt={selectedMode} 
-                    className="w-[30px] h-[30px] min-w-[30px] min-h-[30px] object-contain drop-shadow-lg"
-                  />
-                )}
-                <h3 className="text-xl md:text-3xl font-black italic text-yellow-400 uppercase tracking-[0.2em] md:tracking-[0.4em] drop-shadow-2xl text-center">
-                  {t(transMap, selectedMap, lang)}
-                </h3>
-              </div>
-              
-              <div className="relative w-[90%] md:w-[85%] h-[60%] md:h-[75%] flex items-center justify-center">
-                {getMapImg(selectedMap) && <img src={getMapImg(selectedMap)!} alt={selectedMap} className="w-full h-full object-contain" />}
-              </div>
-
-            </div>
-          ) : (
-            <div className="w-full h-full flex flex-col animate-in slide-in-from-right-8 duration-500 z-20 pt-2 md:pt-4">
-              <div className="flex flex-col items-center border-b border-white/10 pb-4 md:pb-6 mb-4 md:mb-6 shrink-0">
-                
-                <div className="w-[100px] h-[100px] md:w-[120px] md:h-[120px] overflow-hidden rounded-2xl bg-zinc-900 border border-white/10 shadow-xl mb-3 flex items-center justify-center">
-                  <img 
-                    src={getBrawlerImg(selectedBrawler) || ''} 
-                    className="w-full h-full object-cover" 
-                    alt={selectedBrawler || ''} 
-                  />
-                </div>
-
-                <h2 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-yellow-400 leading-none mb-4 text-center">
-                  {t(transMap, selectedBrawler, lang)}
-                </h2>
-                
-                <button 
-                  onClick={() => setSelectedBrawler(null)} 
-                  className="bg-yellow-400 text-black px-8 py-3 md:px-10 md:py-4 rounded-2xl text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(250,204,21,0.3)] hover:scale-105 active:scale-95 transition-all"
-                >
-                  ← {UI_TEXT[lang].back}
-                </button>
-              </div>
-
-              <div className="grid grid-cols-12 px-2 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-white/5 mb-3 shrink-0 w-full">
-                <div className="col-span-1"></div>
-                <div className="col-span-1"></div>
-                <div className="col-span-4 pl-3">{UI_TEXT[lang].opponent}</div>
-                <div className="col-span-3 text-center">{UI_TEXT[lang].win}</div>
-                <div className="col-span-2 text-right pr-2">{UI_TEXT[lang].match}</div>
-                <div className="col-span-1"></div>
-              </div>
-
-              <div className="flex-1 w-full overflow-y-auto space-y-1.5 pr-1 custom-scrollbar pb-10 overflow-x-hidden min-h-0">
-                {matchups.map((m) => {
-                  const heatStyle = getWinRateColor(m.win_rate);
-                  return (
-                    <div key={m.opponent_name} className={`grid grid-cols-12 items-center py-2 md:py-2.5 rounded-xl border transition-all duration-200 ${heatStyle}`}>
-                      <div className="col-span-1"></div>
-                      
-                      <div className="col-span-1 flex justify-center">
-                        <div className="w-[30px] h-[30px] md:w-[40px] md:h-[40px] overflow-hidden rounded-lg bg-black/30 shadow-sm">
-                           <img 
-                            src={getBrawlerImg(m.opponent_name) || ''} 
-                            className="w-full h-full object-cover"
-                            alt="" 
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="col-span-4 pl-3 flex items-center">
-                        <span className="font-black text-[10px] uppercase truncate text-white tracking-tight">
-                          {t(transMap, m.opponent_name, lang)}
-                        </span>
-                      </div>
-                      <div className="col-span-3 text-center">
-                        <span className="font-black italic text-[12px] md:text-[14px]">{m.win_rate}%</span>
-                      </div>
-                      <div className="col-span-2 text-right pr-2">
-                        <span className="font-black italic text-[12px] md:text-[14px]">{m.match_count}</span>
-                      </div>
-                      <div className="col-span-1"></div>
+                    <div className="col-span-4 pl-3 flex items-center">
+                      <span className="font-black text-[10px] uppercase truncate text-white tracking-tight">
+                        {t(transMap, m.opponent_name, lang)}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="col-span-3 text-center">
+                      <span className="font-black italic text-[12px] md:text-[14px]">{m.win_rate}%</span>
+                    </div>
+                    <div className="col-span-2 text-right pr-2">
+                      <span className="font-black italic text-[12px] md:text-[14px]">{m.match_count}</span>
+                    </div>
+                    <div className="col-span-1"></div>
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </section>
-      </main>
+          </div>
+        )}
+      </section>
 
+      {/* [중요] 커스텀 스타일 및 강제 데스크탑 모드 설정 
+        - @media (min-width: 768px): PC 화면에서는 .force-desktop-flex 클래스가 붙은 요소를
+          무조건 display: flex로 만들어서 좌우 분할 화면을 강제함. (모바일 로직 무시)
+      */}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
