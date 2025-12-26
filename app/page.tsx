@@ -225,7 +225,7 @@ export default function BrawlMetaDashboard() {
               <img 
                 src="/icons/logo.png" 
                 alt="Logo" 
-                className="w-[60px] h-[60px] min-w-[60px] min-h-[60px] object-contain drop-shadow-md hover:scale-110 transition-transform duration-300"
+                className="w-[60px] h-[60px] min-w-[60px] min-h-[24px] object-contain drop-shadow-md hover:scale-110 transition-transform duration-300"
                 onError={(e) => (e.currentTarget.style.display = 'none')}
               />
               <h1 className="text-xl md:text-2xl font-black italic tracking-tighter text-yellow-400 uppercase leading-none">
