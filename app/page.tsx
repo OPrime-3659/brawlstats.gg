@@ -170,9 +170,18 @@ export default function BrawlMetaDashboard() {
                 <div key={row.brawler_name} onClick={() => fetchMatchups(row.brawler_name)} className={`grid grid-cols-12 items-center px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${style.row} ${isActive ? 'ring-2 ring-yellow-400 scale-[1.01] brightness-125 shadow-lg' : 'hover:brightness-110'}`}>
                   <div className="col-span-1 text-center font-black italic text-white/50 text-[10px]">#{idx + 1}</div>
                   <div className="col-span-1 text-center font-black text-[18px] text-white">{style.l}</div>
+                  
+                  {/* [수정 1] 왼쪽 리스트: 인라인 스타일로 40px 강제 고정 */}
                   <div className="col-span-1 flex justify-center">
-                    <img src={getBrawlerImg(row.brawler_name) || ''} className="w-8 h-8 min-w-[32px] max-w-[32px] object-contain rounded-lg" alt="" />
+                    <div style={{ width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' }} className="overflow-hidden rounded-lg bg-zinc-900">
+                      <img 
+                        src={getBrawlerImg(row.brawler_name) || ''} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        alt="" 
+                      />
+                    </div>
                   </div>
+
                   <div className="col-span-3 text-center font-black uppercase text-[11px] truncate px-1 text-white">{row.brawler_name}</div>
                   <div className="col-span-2 text-center text-[12px] font-bold text-white/90">{row.match_count}</div>
                   <div className="col-span-2 text-center text-[12px] font-black text-white">{row.win_rate}%</div>
@@ -183,7 +192,7 @@ export default function BrawlMetaDashboard() {
           </div>
         </section>
 
-        {/* 오른쪽 섹션: 중앙 집중 레이아웃 */}
+        {/* 오른쪽 섹션 */}
         <section className="w-[47%] bg-[#020202] flex flex-col items-center justify-center p-6 relative overflow-hidden border-l border-white/5">
           {!selectedMap ? (
             <div className="h-full flex items-center justify-center text-zinc-900 font-black text-[100px] opacity-5 transform -rotate-12 uppercase tracking-tighter select-none">Brawl Meta</div>
@@ -200,7 +209,19 @@ export default function BrawlMetaDashboard() {
             /* 카운터 데이터 분석 영역 */
             <div className="w-full h-full flex flex-col animate-in slide-in-from-right-8 duration-500 z-20 pt-4">
               <div className="flex flex-col items-center border-b border-white/10 pb-6 mb-6">
-                <img src={getBrawlerImg(selectedBrawler) || ''} className="w-16 h-16 object-contain rounded-2xl bg-zinc-900 p-2 border border-white/10 shadow-xl mb-3" alt="" />
+                
+                {/* [수정 2] 오른쪽 메인 초상화: 인라인 스타일로 120px 강제 고정 (FINX 문제 해결) */}
+                <div 
+                  style={{ width: '120px', height: '120px', minWidth: '120px', minHeight: '120px' }} 
+                  className="overflow-hidden rounded-2xl bg-zinc-900 border border-white/10 shadow-xl mb-3 flex items-center justify-center"
+                >
+                  <img 
+                    src={getBrawlerImg(selectedBrawler) || ''} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    alt={selectedBrawler || ''} 
+                  />
+                </div>
+
                 <h2 className="text-3xl font-black italic uppercase tracking-tighter text-yellow-400 leading-none">{selectedBrawler}</h2>
                 <button 
                   onClick={() => setSelectedBrawler(null)} 
@@ -210,49 +231,48 @@ export default function BrawlMetaDashboard() {
                 </button>
               </div>
 
-              {/* 헤더: 이미지 컬럼은 헤더 생략 (빈 div) */}
+              {/* 헤더 */}
               <div className="grid grid-cols-12 px-2 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-white/5 mb-3">
-                <div className="col-span-1"></div> {/* 왼쪽 끝 공백 */}
-                <div className="col-span-1"></div> {/* 이미지 컬럼 헤더 (생략) */}
+                <div className="col-span-1"></div>
+                <div className="col-span-1"></div>
                 <div className="col-span-4 pl-3">Opponent</div>
                 <div className="col-span-3 text-center">Win %</div>
                 <div className="col-span-2 text-right pr-2">Matches</div>
-                <div className="col-span-1"></div> {/* 오른쪽 끝 공백 */}
+                <div className="col-span-1"></div>
               </div>
 
-              {/* 리스트 본문: 이미지 -> 이름 -> 승률 -> 매치 수 */}
+              {/* 리스트 본문 */}
               <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar pb-10 overflow-x-hidden">
                 {matchups.map((m) => {
                   const heatStyle = getWinRateColor(m.win_rate);
                   return (
                     <div key={m.opponent_name} className={`grid grid-cols-12 items-center py-2.5 rounded-xl border transition-all duration-200 ${heatStyle}`}>
-                      <div className="col-span-1"></div> {/* 왼쪽 끝 공백 */}
+                      <div className="col-span-1"></div>
                       
-                      {/* 두 번째 컬럼: 브롤러 이미지 */}
+                      {/* [수정 3] 오른쪽 리스트 이미지: 인라인 스타일로 40px 강제 고정 */}
                       <div className="col-span-1 flex justify-center">
-                        <img 
-                          src={getBrawlerImg(m.opponent_name) || ''} 
-                          className="w-8 h-8 min-w-[32px] max-w-[32px] object-contain rounded-lg bg-black/30 shadow-sm" 
-                          alt="" 
-                        />
+                        <div 
+                          style={{ width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' }} 
+                          className="overflow-hidden rounded-lg bg-black/30 shadow-sm"
+                        >
+                           <img 
+                            src={getBrawlerImg(m.opponent_name) || ''} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            alt="" 
+                          />
+                        </div>
                       </div>
                       
-                      {/* 세 번째 컬럼: 브롤러 이름 */}
                       <div className="col-span-4 pl-3 flex items-center">
                         <span className="font-black text-[10px] uppercase truncate text-white tracking-tight">{m.opponent_name}</span>
                       </div>
-                      
-                      {/* 네 번째 컬럼: 승률 */}
                       <div className="col-span-3 text-center">
                         <span className="font-black italic text-[14px]">{m.win_rate}%</span>
                       </div>
-                      
-                      {/* 다섯 번째 컬럼: 매치 수 */}
                       <div className="col-span-2 text-right pr-2">
                         <span className="font-black italic text-[14px]">{m.match_count}</span>
                       </div>
-
-                      <div className="col-span-1"></div> {/* 오른쪽 끝 공백 */}
+                      <div className="col-span-1"></div>
                     </div>
                   );
                 })}
