@@ -26,17 +26,17 @@ const MODE_ICONS: Record<string, string> = {
 const UI_TEXT = {
   ko: { 
     tier: '티어', brawler: '브롤러', match: '매치', win: '승률', score: '점수', 
-    opponent: '상대', back: '뒤로가기',
+    opponent: '상대', back: '목록으로',
     score_desc: '승률과 픽률을 기반으로 산출된 점수' 
   },
   en: { 
     tier: 'Tier', brawler: 'Brawler', match: 'Match', win: 'Win%', score: 'Score', 
-    opponent: 'Opponent', back: 'Back',
+    opponent: 'Opponent', back: 'Back to List',
     score_desc: 'Score based on Win Rate & Pick Rate'
   },
   ja: { 
     tier: 'ティア', brawler: 'キャラ', match: '対戦数', win: '勝率', score: 'スコア', 
-    opponent: '相手', back: '戻る',
+    opponent: '相手', back: '一覧に戻る',
     score_desc: '勝率と使用率に基づくスコア'
   },
 };
@@ -165,23 +165,25 @@ export default function BrawlMetaDashboard() {
   const getMapImg = (name: string) => mapImages[normalizeName(name)] || null;
 
   return (
-    <div className="h-[98vh] bg-zinc-950 text-white flex flex-col overflow-hidden font-sans m-auto mt-[1vh] border border-white/5 rounded-3xl shadow-2xl">
-      <main className="flex-1 flex overflow-hidden">
+    // [레이아웃] flex flex-col md:flex-row 로 복귀
+    <div className="h-screen md:h-[98vh] w-full max-w-[1920px] bg-zinc-950 text-white flex flex-col md:flex-row overflow-hidden font-sans m-auto md:mt-[1vh] border-none md:border border-white/5 rounded-none md:rounded-3xl shadow-2xl">
+      <main className="flex-1 flex overflow-hidden relative w-full">
         
-        {/* 왼쪽 섹션: 티어 리스트 */}
-        <section className="w-[53%] flex flex-col border-r border-white/5 bg-[#080808]">
-          <div className="p-6 space-y-5 border-b border-white/5 bg-zinc-900/30">
+        {/* ================= 왼쪽 섹션 ================= */}
+        {/* 'force-desktop-flex' 클래스 추가: CSS로 강제 표시 */}
+        <section className={`w-full md:w-[53%] flex-col border-r border-white/5 bg-[#080808] force-desktop-flex ${selectedBrawler ? 'hidden md:flex' : 'flex'}`}>
+          <div className="p-4 md:p-6 space-y-4 md:space-y-5 border-b border-white/5 bg-zinc-900/30 shrink-0">
+            
+            {/* 헤더 영역 */}
             <div className="flex justify-between items-center">
-              
-              <div className="flex items-center gap-3">
-                {/* ▼ [수정] w-6 h-6 (24px)으로 글씨 크기와 동일하게 맞춤 */}
+              <div className="flex items-center gap-2 md:gap-3">
                 <img 
                   src="/icons/logo.png" 
                   alt="Logo" 
-                  className="w-[60px] h-[60px] min-w-[60px] min-h-[60px] object-contain drop-shadow-md hover:scale-110 transition-transform duration-300"
+                  className="w-[24px] h-[24px] min-w-[24px] min-h-[24px] object-contain drop-shadow-md hover:scale-110 transition-transform duration-300"
                   onError={(e) => (e.currentTarget.style.display = 'none')}
                 />
-                <h1 className="text-2xl font-black italic tracking-tighter text-yellow-400 uppercase leading-none">
+                <h1 className="text-xl md:text-2xl font-black italic tracking-tighter text-yellow-400 uppercase leading-none">
                   {lang === 'ko' ? '브롤 경쟁전 메타' : lang === 'ja' ? 'ブロスタ ガチバトル メタ' : 'Brawl Ranked Meta'}
                 </h1>
               </div>
@@ -199,9 +201,9 @@ export default function BrawlMetaDashboard() {
             </div>
             
             {/* 필터 영역 */}
-            <div className="flex gap-3 items-end">
+            <div className="flex gap-2 md:gap-3 items-end">
               <select 
-                className="w-full max-w-[160px] bg-zinc-900 border border-zinc-700 px-4 py-3.5 rounded-2xl font-black text-[11px] outline-none focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
+                className="flex-1 md:flex-none w-auto md:w-[160px] bg-zinc-900 border border-zinc-700 px-2 md:px-4 py-3 md:py-3.5 rounded-xl md:rounded-2xl font-black text-[10px] md:text-[11px] outline-none focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
                 value={selectedMode} 
                 onChange={(e) => setSelectedMode(e.target.value)}
               >
@@ -209,7 +211,7 @@ export default function BrawlMetaDashboard() {
                 {modes.map(m => <option key={m} value={m}>{t(transMap, m, lang)}</option>)}
               </select>
               <select 
-                className="w-full max-w-[180px] bg-zinc-900 border border-zinc-700 px-4 py-3.5 rounded-2xl font-black text-[11px] outline-none disabled:opacity-20 focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
+                className="flex-1 md:flex-none w-auto md:w-[180px] bg-zinc-900 border border-zinc-700 px-2 md:px-4 py-3 md:py-3.5 rounded-xl md:rounded-2xl font-black text-[10px] md:text-[11px] outline-none disabled:opacity-20 focus:border-yellow-400 text-center cursor-pointer appearance-none uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-95" 
                 disabled={!selectedMode} 
                 value={selectedMap} 
                 onChange={(e) => setSelectedMap(e.target.value)}
@@ -218,106 +220,104 @@ export default function BrawlMetaDashboard() {
                 {maps.map(m => <option key={m} value={m}>{t(transMap, m, lang)}</option>)}
               </select>
 
-              <div className="ml-auto pb-1 text-[9px] text-zinc-500 font-medium text-right whitespace-nowrap opacity-70 tracking-tight">
+              <div className="hidden sm:block ml-auto pb-1 text-[9px] text-zinc-500 font-medium text-right whitespace-nowrap opacity-70 tracking-tight">
                 * {UI_TEXT[lang].score_desc}
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-12 px-5 py-4 bg-zinc-900/90 text-[10px] font-black text-zinc-500 uppercase tracking-widest sticky top-0 z-10 border-b border-white/5">
-            <div className="col-span-1 text-center">#</div>
-            <div className="col-span-1 text-center">{UI_TEXT[lang].tier}</div>
+          <div className="grid grid-cols-12 px-3 md:px-5 py-3 md:py-4 bg-zinc-900/90 text-[10px] font-black text-zinc-500 uppercase tracking-widest sticky top-0 z-10 border-b border-white/5 shrink-0">
+            <div className="col-span-1 text-center hidden sm:block">#</div>
+            <div className="col-span-2 sm:col-span-1 text-center">{UI_TEXT[lang].tier}</div>
             <div className="col-span-1"></div>
-            <div className="col-span-3 text-center">{UI_TEXT[lang].brawler}</div>
-            <div className="col-span-2 text-center">{UI_TEXT[lang].match}</div>
-            <div className="col-span-2 text-center">{UI_TEXT[lang].win}</div>
-            <div className="col-span-2 text-center">{UI_TEXT[lang].score}</div>
+            <div className="col-span-4 sm:col-span-3 text-center">{UI_TEXT[lang].brawler}</div>
+            <div className="col-span-2 text-center hidden sm:block">{UI_TEXT[lang].match}</div>
+            <div className="col-span-3 sm:col-span-2 text-center">{UI_TEXT[lang].win}</div>
+            <div className="col-span-2 sm:col-span-2 text-center">{UI_TEXT[lang].score}</div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-2.5 custom-scrollbar overflow-x-hidden">
+          <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 md:space-y-2.5 custom-scrollbar overflow-x-hidden min-h-0">
             {stats.map((row, idx) => {
               const style = getTierStyle(row.total_score);
               const isActive = selectedBrawler === row.brawler_name;
               return (
-                <div key={row.brawler_name} onClick={() => fetchMatchups(row.brawler_name)} className={`grid grid-cols-12 items-center px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${style.row} ${isActive ? 'ring-2 ring-yellow-400 scale-[1.01] brightness-125 shadow-lg' : 'hover:brightness-110'}`}>
-                  <div className="col-span-1 text-center font-black italic text-white/50 text-[10px]">#{idx + 1}</div>
-                  <div className="col-span-1 text-center font-black text-[18px] text-white">{style.l}</div>
+                <div key={row.brawler_name} onClick={() => fetchMatchups(row.brawler_name)} className={`grid grid-cols-12 items-center px-2 md:px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${style.row} ${isActive ? 'ring-2 ring-yellow-400 scale-[1.01] brightness-125 shadow-lg' : 'active:scale-95 md:active:scale-100 md:hover:brightness-110'}`}>
+                  <div className="col-span-1 text-center font-black italic text-white/50 text-[10px] hidden sm:block">#{idx + 1}</div>
+                  <div className="col-span-2 sm:col-span-1 text-center font-black text-[16px] md:text-[18px] text-white">{style.l}</div>
                   
                   <div className="col-span-1 flex justify-center">
-                    <div style={{ width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' }} className="overflow-hidden rounded-lg bg-zinc-900">
+                    <div className="w-[32px] h-[32px] md:w-[40px] md:h-[40px] overflow-hidden rounded-lg bg-zinc-900">
                       <img 
                         src={getBrawlerImg(row.brawler_name) || ''} 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        className="w-full h-full object-cover"
                         alt="" 
                       />
                     </div>
                   </div>
 
-                  <div className="col-span-3 text-center font-black uppercase text-[11px] truncate px-1 text-white">
+                  <div className="col-span-4 sm:col-span-3 text-center font-black uppercase text-[10px] md:text-[11px] truncate px-1 text-white">
                     {t(transMap, row.brawler_name, lang)}
                   </div>
-                  <div className="col-span-2 text-center text-[12px] font-bold text-white/90">{row.match_count}</div>
-                  <div className="col-span-2 text-center text-[12px] font-black text-white">{row.win_rate}%</div>
-                  <div className="col-span-2 text-center font-black text-[12px] text-white italic">{Number(row.total_score).toFixed(2)}</div>
+                  <div className="col-span-2 text-center text-[12px] font-bold text-white/90 hidden sm:block">{row.match_count}</div>
+                  <div className="col-span-3 sm:col-span-2 text-center text-[11px] md:text-[12px] font-black text-white">{row.win_rate}%</div>
+                  <div className="col-span-2 sm:col-span-2 text-center font-black text-[11px] md:text-[12px] text-white italic">{Number(row.total_score).toFixed(2)}</div>
                 </div>
               );
             })}
           </div>
         </section>
 
-        {/* 오른쪽 섹션 */}
-        <section className="w-[47%] bg-[#020202] flex flex-col items-center justify-center p-6 relative overflow-hidden border-l border-white/5">
+        {/* ================= 오른쪽 섹션 ================= */}
+        {/* 'force-desktop-flex' 클래스 추가: CSS로 강제 표시 */}
+        <section className={`w-full md:w-[47%] bg-[#020202] flex-col items-center justify-center p-4 md:p-6 relative overflow-hidden border-l border-white/5 h-full force-desktop-flex ${selectedBrawler ? 'flex' : 'hidden md:flex'}`}>
           {!selectedMap ? (
-            <div className="h-full flex items-center justify-center text-zinc-900 font-black text-[100px] opacity-5 transform -rotate-12 uppercase tracking-tighter select-none">Brawl Meta</div>
+            <div className="h-full flex items-center justify-center text-zinc-900 font-black text-[50px] md:text-[100px] opacity-5 transform -rotate-12 uppercase tracking-tighter select-none">Brawl Meta</div>
           ) : !selectedBrawler ? (
             <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in duration-700 overflow-hidden">
               
-              <div className="w-full flex items-center justify-center gap-3 px-4 mb-4">
-                <h3 className="text-3xl font-black text-yellow-400 uppercase tracking-[0.4em] drop-shadow-2xl">
-                  {t(transMap, selectedMap, lang)}
-                </h3>
+              <div className="w-full flex items-center justify-center gap-2 md:gap-3 px-4 mb-4">
                 {selectedMode && MODE_ICONS[selectedMode] && (
-                  /* ▼ [수정] w-8 h-8 (32px)으로 맵 이름(text-3xl) 크기와 비슷하게 맞춤 */
                   <img 
                     src={MODE_ICONS[selectedMode]} 
                     alt={selectedMode} 
                     className="w-[30px] h-[30px] min-w-[30px] min-h-[30px] object-contain drop-shadow-lg"
                   />
                 )}
+                <h3 className="text-xl md:text-3xl font-black italic text-yellow-400 uppercase tracking-[0.2em] md:tracking-[0.4em] drop-shadow-2xl text-center">
+                  {t(transMap, selectedMap, lang)}
+                </h3>
               </div>
               
-              <div className="relative w-[85%] h-[75%] flex items-center justify-center">
+              <div className="relative w-[90%] md:w-[85%] h-[60%] md:h-[75%] flex items-center justify-center">
                 {getMapImg(selectedMap) && <img src={getMapImg(selectedMap)!} alt={selectedMap} className="w-full h-full object-contain" />}
               </div>
 
             </div>
           ) : (
-            <div className="w-full h-full flex flex-col animate-in slide-in-from-right-8 duration-500 z-20 pt-4">
-              <div className="flex flex-col items-center border-b border-white/10 pb-6 mb-6">
+            <div className="w-full h-full flex flex-col animate-in slide-in-from-right-8 duration-500 z-20 pt-2 md:pt-4">
+              <div className="flex flex-col items-center border-b border-white/10 pb-4 md:pb-6 mb-4 md:mb-6 shrink-0">
                 
-                <div 
-                  style={{ width: '120px', height: '120px', minWidth: '120px', minHeight: '120px' }} 
-                  className="overflow-hidden rounded-2xl bg-zinc-900 border border-white/10 shadow-xl mb-3 flex items-center justify-center"
-                >
+                <div className="w-[100px] h-[100px] md:w-[120px] md:h-[120px] overflow-hidden rounded-2xl bg-zinc-900 border border-white/10 shadow-xl mb-3 flex items-center justify-center">
                   <img 
                     src={getBrawlerImg(selectedBrawler) || ''} 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    className="w-full h-full object-cover" 
                     alt={selectedBrawler || ''} 
                   />
                 </div>
 
-                <h2 className="text-3xl font-black italic uppercase tracking-tighter text-yellow-400 leading-none">
+                <h2 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-yellow-400 leading-none mb-4 text-center">
                   {t(transMap, selectedBrawler, lang)}
                 </h2>
+                
                 <button 
                   onClick={() => setSelectedBrawler(null)} 
-                  className="mt-6 bg-yellow-400 text-black px-10 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(250,204,21,0.3)] hover:scale-105 active:scale-95 transition-all"
+                  className="bg-yellow-400 text-black px-8 py-3 md:px-10 md:py-4 rounded-2xl text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(250,204,21,0.3)] hover:scale-105 active:scale-95 transition-all"
                 >
                   ← {UI_TEXT[lang].back}
                 </button>
               </div>
 
-              <div className="grid grid-cols-12 px-2 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-white/5 mb-3">
+              <div className="grid grid-cols-12 px-2 py-2 text-[10px] font-black text-zinc-500 uppercase tracking-widest border-b border-white/5 mb-3 shrink-0 w-full">
                 <div className="col-span-1"></div>
                 <div className="col-span-1"></div>
                 <div className="col-span-4 pl-3">{UI_TEXT[lang].opponent}</div>
@@ -326,21 +326,18 @@ export default function BrawlMetaDashboard() {
                 <div className="col-span-1"></div>
               </div>
 
-              <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar pb-10 overflow-x-hidden">
+              <div className="flex-1 w-full overflow-y-auto space-y-1.5 pr-1 custom-scrollbar pb-10 overflow-x-hidden min-h-0">
                 {matchups.map((m) => {
                   const heatStyle = getWinRateColor(m.win_rate);
                   return (
-                    <div key={m.opponent_name} className={`grid grid-cols-12 items-center py-2.5 rounded-xl border transition-all duration-200 ${heatStyle}`}>
+                    <div key={m.opponent_name} className={`grid grid-cols-12 items-center py-2 md:py-2.5 rounded-xl border transition-all duration-200 ${heatStyle}`}>
                       <div className="col-span-1"></div>
                       
                       <div className="col-span-1 flex justify-center">
-                        <div 
-                          style={{ width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' }} 
-                          className="overflow-hidden rounded-lg bg-black/30 shadow-sm"
-                        >
+                        <div className="w-[30px] h-[30px] md:w-[40px] md:h-[40px] overflow-hidden rounded-lg bg-black/30 shadow-sm">
                            <img 
                             src={getBrawlerImg(m.opponent_name) || ''} 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            className="w-full h-full object-cover"
                             alt="" 
                           />
                         </div>
@@ -352,10 +349,10 @@ export default function BrawlMetaDashboard() {
                         </span>
                       </div>
                       <div className="col-span-3 text-center">
-                        <span className="font-black italic text-[14px]">{m.win_rate}%</span>
+                        <span className="font-black italic text-[12px] md:text-[14px]">{m.win_rate}%</span>
                       </div>
                       <div className="col-span-2 text-right pr-2">
-                        <span className="font-black italic text-[14px]">{m.match_count}</span>
+                        <span className="font-black italic text-[12px] md:text-[14px]">{m.match_count}</span>
                       </div>
                       <div className="col-span-1"></div>
                     </div>
@@ -367,11 +364,18 @@ export default function BrawlMetaDashboard() {
         </section>
       </main>
 
+      {/* [중요] CSS 강제 오버라이드: 화면이 768px 이상이면 무조건 두 섹션을 flex로 보이게 함 */}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
         body { overflow: hidden; background-color: #09090b; }
+
+        @media (min-width: 768px) {
+          .force-desktop-flex {
+            display: flex !important;
+          }
+        }
       `}</style>
     </div>
   );
