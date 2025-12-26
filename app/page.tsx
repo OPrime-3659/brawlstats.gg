@@ -14,6 +14,15 @@ const MODE_NAMES: Record<string, string> = {
   knockout: 'Knockout', heist: 'Heist', bounty: 'Bounty'
 };
 
+const MODE_ICONS: Record<string, string> = {
+  brawlBall: '/icons/mode-brawlball.png',
+  gemGrab: '/icons/mode-gemgrab.png',
+  hotZone: '/icons/mode-hotzone.png',
+  knockout: '/icons/mode-knockout.png',
+  heist: '/icons/mode-heist.png',
+  bounty: '/icons/mode-bounty.png',
+};
+
 const UI_TEXT = {
   ko: { 
     tier: '티어', brawler: '브롤러', match: '매치', win: '승률', score: '점수', 
@@ -163,9 +172,20 @@ export default function BrawlMetaDashboard() {
         <section className="w-[53%] flex flex-col border-r border-white/5 bg-[#080808]">
           <div className="p-6 space-y-5 border-b border-white/5 bg-zinc-900/30">
             <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-black italic tracking-tighter text-yellow-400 uppercase leading-none">
-                {lang === 'ko' ? '브롤 경쟁전 메타' : lang === 'ja' ? 'ブロスタ ガチバトル メタ' : 'Brawl Ranked Meta'}
-              </h1>
+              
+              <div className="flex items-center gap-3">
+                {/* ▼ [수정] w-6 h-6 (24px)으로 글씨 크기와 동일하게 맞춤 */}
+                <img 
+                  src="/icons/logo.png" 
+                  alt="Logo" 
+                  className="w-[60px] h-[60px] min-w-[60px] min-h-[60px] object-contain drop-shadow-md hover:scale-110 transition-transform duration-300"
+                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                />
+                <h1 className="text-2xl font-black italic tracking-tighter text-yellow-400 uppercase leading-none">
+                  {lang === 'ko' ? '브롤 경쟁전 메타' : lang === 'ja' ? 'ブロスタ ガチバトル メタ' : 'Brawl Ranked Meta'}
+                </h1>
+              </div>
+
               <div className="flex gap-1">
                  {(['ko', 'en', 'ja'] as const).map((l) => (
                    <button 
@@ -198,7 +218,6 @@ export default function BrawlMetaDashboard() {
                 {maps.map(m => <option key={m} value={m}>{t(transMap, m, lang)}</option>)}
               </select>
 
-              {/* ▼ [수정됨] max-w 제한 제거 및 whitespace-nowrap 추가로 줄바꿈 방지 */}
               <div className="ml-auto pb-1 text-[9px] text-zinc-500 font-medium text-right whitespace-nowrap opacity-70 tracking-tight">
                 * {UI_TEXT[lang].score_desc}
               </div>
@@ -252,14 +271,25 @@ export default function BrawlMetaDashboard() {
             <div className="h-full flex items-center justify-center text-zinc-900 font-black text-[100px] opacity-5 transform -rotate-12 uppercase tracking-tighter select-none">Brawl Meta</div>
           ) : !selectedBrawler ? (
             <div className="w-full h-full flex flex-col items-center justify-center animate-in fade-in duration-700 overflow-hidden">
-              <div className="absolute top-10 w-full text-center z-10 px-4">
-                <h3 className="text-3xl font-black italic text-yellow-400 uppercase tracking-[0.4em] drop-shadow-2xl">
+              
+              <div className="w-full flex items-center justify-center gap-3 px-4 mb-4">
+                <h3 className="text-3xl font-black text-yellow-400 uppercase tracking-[0.4em] drop-shadow-2xl">
                   {t(transMap, selectedMap, lang)}
                 </h3>
+                {selectedMode && MODE_ICONS[selectedMode] && (
+                  /* ▼ [수정] w-8 h-8 (32px)으로 맵 이름(text-3xl) 크기와 비슷하게 맞춤 */
+                  <img 
+                    src={MODE_ICONS[selectedMode]} 
+                    alt={selectedMode} 
+                    className="w-[30px] h-[30px] min-w-[30px] min-h-[30px] object-contain drop-shadow-lg"
+                  />
+                )}
               </div>
-              <div className="relative w-[85%] h-[75%] flex items-center justify-center mt-12">
+              
+              <div className="relative w-[85%] h-[75%] flex items-center justify-center">
                 {getMapImg(selectedMap) && <img src={getMapImg(selectedMap)!} alt={selectedMap} className="w-full h-full object-contain" />}
               </div>
+
             </div>
           ) : (
             <div className="w-full h-full flex flex-col animate-in slide-in-from-right-8 duration-500 z-20 pt-4">
